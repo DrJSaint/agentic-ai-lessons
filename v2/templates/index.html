@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Agentic loop — live view</title>
+<style>
+  body {
+    font-family: -apple-system, Segoe UI, sans-serif;
+    background: #14161a;
+    color: #e6e6e6;
+    max-width: 720px;
+    margin: 40px auto;
+    padding: 0 20px;
+  }
+  h1 { font-size: 22px; font-weight: 500; }
+  #task-box {
+    width: 100%;
+    padding: 10px;
+    font-size: 14px;
+    border-radius: 8px;
+    border: 1px solid #3a3d44;
+    background: #1d1f24;
+    color: #e6e6e6;
+    box-sizing: border-box;
+  }
+  button {
+    margin-top: 10px;
+    padding: 10px 18px;
+    border-radius: 8px;
+    border: none;
+    background: #7f77dd;
+    color: #1c1a33;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  button:disabled { opacity: 0.5; cursor: default; }
+  .card {
+    margin-top: 14px;
+    padding: 14px 16px;
+    border-radius: 10px;
+    border: 1px solid #3a3d44;
+    background: #1d1f24;
+    animation: in 0.3s ease;
+  }
+  @keyframes in {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #9a98f7;
+    margin-bottom: 6px;
+  }
+  .card.tool_call .label { color: #5dcaa5; }
+  .card.tool_result .label { color: #5dcaa5; }
+  .card.reasoning .label { color: #7f77dd; }
+  .card.done .label { color: #f0997b; }
+  pre {
+    white-space: pre-wrap;
+    font-family: ui-monospace, monospace;
+    font-size: 13px;
+    margin: 0;
+  }
+</style>
+</head>
+<body>
+
+<h1>Watch Claude decide</h1>
+<input id="task-box" value="Would 'Lumière' get shortlisted by an AI shopping agent over its competitor 'Aurelio'? Check both brands' data and give a verdict with your reasoning.">
+<br>
+<button id="run-btn" onclick="runLoop()">Run</button>
+
+<div id="cards"></div>
+
+<script>
+function runLoop() {
+  const btn = document.getElementById("run-btn");
+  const cards = document.getElementById("cards");
+  cards.innerHTML = "";
+  btn.disabled = true;
+  btn.textContent = "Running...";
+
+  const task = encodeURIComponent(document.getElementById("task-box").value);
+  const source = new EventSource(`/stream?task=${task}`);
+
+  source.onmessage = (e) => {
+    const event = JSON.parse(e.data);
+    const card = document.createElement("div");
+
+    if (event.type === "task") {
+      card.className = "card task";
+      card.innerHTML = `<div class="label">Task</div><pre>${event.content}</pre>`;
+    } else if (event.type === "reasoning") {
+      card.className = "card reasoning";
+      card.innerHTML = `<div class="label">Claude reasons</div><pre>${event.content}</pre>`;
+    } else if (event.type === "tool_call") {
+      card.className = "card tool_call";
+      card.innerHTML = `<div class="label">Tool call</div><pre>${event.name}(${JSON.stringify(event.input)})</pre>`;
+    } else if (event.type === "tool_result") {
+      card.className = "card tool_result";
+      card.innerHTML = `<div class="label">Tool result</div><pre>${JSON.stringify(event.result, null, 2)}</pre>`;
+    } else if (event.type === "done") {
+      card.className = "card done";
+      card.innerHTML = `<div class="label">Done</div><pre>Loop finished.</pre>`;
+      source.close();
+      btn.disabled = false;
+      btn.textContent = "Run";
+    }
+
+    cards.appendChild(card);
+    card.scrollIntoView({ behavior: "smooth", block: "end" });
+  };
+
+  source.onerror = () => {
+    source.close();
+    btn.disabled = false;
+    btn.textContent = "Run";
+  };
+}
+</script>
+
+</body>
+</html>
