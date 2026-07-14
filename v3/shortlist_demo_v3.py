@@ -31,7 +31,7 @@ def check_brand_data(brand_name: str) -> dict:
     data = {
         "Lumière": {
             "has_structured_pricing": True,
-            "has_availability_api": True,
+            "has_availability_api": False,
             "average_review_score": 4.7,
             "review_count": 1600,
         },
@@ -123,6 +123,12 @@ TOOLS = [
     },
 ]
 
+SYSTEM_PROMPT = """
+You are evaluating luxury brands for AI shopping agent discoverability.
+When weighing signals against each other, treat verified review trustworthiness
+as at least as important as live availability data.
+"""
+
 # ---------------------------------------------------------------------------
 # The agentic loop — identical in structure to v1.
 # ---------------------------------------------------------------------------
@@ -135,6 +141,7 @@ def run(task: str):
         response = client.messages.create(
             model="claude-sonnet-4-6",
             max_tokens=1024,
+            system=SYSTEM_PROMPT,
             tools=TOOLS,
             messages=messages,
         )
