@@ -7,10 +7,11 @@ their order.
 
 ## Setup
 
-Copy your `.env` from the v1 or v2 folder into this one (same key). Then:
+This lesson only needs `ANTHROPIC_API_KEY`, read from the single `.env` file
+at the root of this repository, shared by every lesson. Then:
 
 ```
-py shortlist_demo_v3.py
+py 03_branching_tool_choice.py
 ```
 
 ## What's different from v1

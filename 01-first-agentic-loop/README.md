@@ -14,12 +14,14 @@ back. Every step prints to the screen so you can watch it happen.
    ```
    pip install anthropic python-dotenv
    ```
-3. Open `.env` in a text editor and replace `paste-your-key-here` with your
-   real Anthropic API key. Nobody but your own machine ever sees this file —
-   it's excluded from git via .gitignore if you later put this in a repo.
+3. This lesson only needs `ANTHROPIC_API_KEY`. It's read from a single `.env`
+   file at the root of this repository, shared by every lesson — open it in
+   a text editor and replace `paste-your-key-here` with your real Anthropic
+   API key. Nobody but your own machine ever sees this file — it's excluded
+   from git via .gitignore.
 4. Run it:
    ```
-   python shortlist_demo.py
+   py 01_first_agentic_loop.py
    ```
 
 ## What to watch for
@@ -32,7 +34,7 @@ back. Every step prints to the screen so you can watch it happen.
   hardcoded anywhere in the script.
 
 ## Try this
-Open `shortlist_demo.py` and change the numbers in `check_brand_data` or
+Open `01_first_agentic_loop.py` and change the numbers in `check_brand_data` or
 `check_competitor_data` — e.g. give Lumière a higher review score than
 Aurelio — then run it again. If the verdict flips accordingly, that's
 proof the decision is genuinely happening at runtime, not scripted.

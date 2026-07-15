@@ -20,8 +20,9 @@ only fields Google Places actually provides.
 
 ## Setup
 
-You'll need `GOOGLE_PLACES_KEY` in your `.env`, alongside `ANTHROPIC_API_KEY`.
-Install the one extra dependency:
+This lesson needs both `ANTHROPIC_API_KEY` and `GOOGLE_PLACES_KEY`, read from
+the single `.env` file at the root of this repository, shared by every
+lesson. Install the one extra dependency:
 
 ```
 py -m pip install googlemaps
@@ -30,7 +31,7 @@ py -m pip install googlemaps
 Then run:
 
 ```
-py shortlist_demo_v6.py
+py 06_real_data_google_places.py
 ```
 
 ## What's genuinely different from every earlier version

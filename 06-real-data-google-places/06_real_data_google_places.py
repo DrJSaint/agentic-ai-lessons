@@ -1,23 +1,23 @@
 """
-Lesson 7 — real data, genuinely open-ended.
+Lesson 6 — real data.
 
-The tools here are identical to v6 — two real Google Places lookups, no
-mock data anywhere. What's different is the task. v6 asked for a fixed
-checklist ("check rating, review count, price tier, website, and opening
-hours for both") — fully specified, so Claude had nothing left to decide
-except the order to do it in. That produced a single, efficient pass with
-no real branching.
+Every earlier version used invented data: fictional brands, fictional review
+ratios, a fictional "availability API" flag that no real system actually
+has. This version drops all of that. Both tools here make genuine calls to
+the Google Places API and return only fields that are actually real:
+- a business's real star rating and real review count
+- its real price tier, if Google has one on file
+- whether it genuinely has a website listed
+- its real, live opening-hours status
 
-v7 asks something genuinely open instead: assess four real Bond Street
-luxury flagships, decide for yourself what's worth checking for each one
-and in what order, and stop once you're confident. No fixed checklist.
+Nothing is scripted to fail or succeed on a schedule. If a business isn't
+found, or has no hours data, that's a genuine limitation of what's publicly
+listed — not a rehearsed failure like v4's stock feed.
 
-Three of the four businesses (Chanel, Dior, Louis Vuitton) are famous
-flagships likely to have rich, complete listings. The fourth, Brunello
-Cucinelli, is a genuinely smaller, quieter brand — real, but plausibly
-thinner on Google's data. Nothing is scripted to make it thin; it's just
-a real business that might turn out that way, giving Claude an honest
-chance (not a guarantee) to hit something worth reacting to mid-run.
+The scenario has changed to match what real data can honestly answer:
+comparing two real businesses on how well-represented they are in
+structured, queryable data — not "AI shopping agent shortlisting," which
+was never something Google Places could genuinely speak to.
 """
 
 import os
@@ -31,8 +31,7 @@ client = Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
 gmaps = googlemaps.Client(key=os.environ["GOOGLE_PLACES_KEY"])
 
 # ---------------------------------------------------------------------------
-# Real tools — identical to v6. Both genuinely call the Google Places API.
-# No mock data anywhere in this script.
+# Real tools — both genuinely call the Google Places API. No mock data.
 # ---------------------------------------------------------------------------
 
 def check_place_profile(business_name: str) -> dict:
@@ -40,15 +39,19 @@ def check_place_profile(business_name: str) -> dict:
     field. Returns actual rating, review count, price tier, and whether a
     website is listed — or a genuine not-found result if nothing matches."""
 
-    # A real network call — a genuine round trip to Google's servers.
+    # This is a real network call — a genuine round trip to Google's
+    # servers, same category of event as the Anthropic API call in the
+    # loop below, just a different destination.
     search_result = gmaps.places(query=business_name)
 
-    # Google's response wraps matches in a "results" list. Fall back to an
-    # empty list if that key's somehow missing, rather than crashing below.
+    # Google's response is a bigger dictionary with a "results" list
+    # inside it. Fall back to an empty list if that key's somehow missing,
+    # rather than crashing on the next line.
     results = search_result.get("results", [])
 
-    # A genuine, unscripted failure case: if Google found nothing matching
-    # this name, say so honestly rather than reading data that isn't there.
+    # A genuine, unscripted failure case — not rehearsed like v4's stock
+    # feed. If Google found nothing matching this name, say so honestly
+    # rather than trying to read data that was never there.
     if not results:
         return {
             "business_name": business_name,
@@ -62,8 +65,9 @@ def check_place_profile(business_name: str) -> dict:
     place = results[0]
     place_id = place.get("place_id")
 
-    # A second, separate network call. Legacy Text Search doesn't include
-    # a website field, so this asks specifically for it, by place_id.
+    # A second, separate network call. The legacy Text Search response
+    # doesn't include a website field, so this asks specifically for it,
+    # by place_id.
     details = gmaps.place(place_id=place_id, fields=["website"])
     website = details.get("result", {}).get("website")
 
@@ -121,29 +125,29 @@ def check_opening_status(business_name: str) -> dict:
     }
 
 
-# TOOL_FUNCTIONS maps the tool names Claude can request onto the real
-# Python functions above. Claude only ever sees the names and descriptions
-# in TOOLS below — never this dictionary, never the function code itself.
 TOOL_FUNCTIONS = {
     "check_place_profile": check_place_profile,
+    "check_competitor_profile": check_place_profile,
     "check_opening_status": check_opening_status,
 }
 
 # ---------------------------------------------------------------------------
-# Tool definitions — the descriptions Claude actually reads. Only two
-# tools this time, not four-per-brand as in earlier versions — with a
-# genuinely open task, Claude decides how many times to call each one and
-# for which businesses, rather than being handed one tool per signal.
+# Tool definitions
 # ---------------------------------------------------------------------------
 
 TOOLS = [
     {
         "name": "check_place_profile",
-        "description": (
-            "Look up a real business's discoverability profile via Google "
-            "Places: rating, review count, price tier, and whether it has a "
-            "website listed. Call this once per business you want to assess."
-        ),
+        "description": "Look up a real business's discoverability profile via Google Places: rating, review count, price tier, and whether it has a website listed.",
+        "input_schema": {
+            "type": "object",
+            "properties": {"business_name": {"type": "string"}},
+            "required": ["business_name"],
+        },
+    },
+    {
+        "name": "check_competitor_profile",
+        "description": "Look up the same discoverability profile for a named competitor business.",
         "input_schema": {
             "type": "object",
             "properties": {"business_name": {"type": "string"}},
@@ -152,13 +156,7 @@ TOOLS = [
     },
     {
         "name": "check_opening_status",
-        "description": (
-            "Check whether a business has real, structured opening-hours "
-            "data listed with Google, and whether it's open right now. Some "
-            "real listings do not have this data at all. Use your own "
-            "judgement about whether this signal is worth checking for a "
-            "given business."
-        ),
+        "description": "Check whether a business has real, structured opening-hours data listed with Google, and whether it's open right now. Some real listings do not have this data at all.",
         "input_schema": {
             "type": "object",
             "properties": {"business_name": {"type": "string"}},
@@ -167,19 +165,10 @@ TOOLS = [
     },
 ]
 
-# ---------------------------------------------------------------------------
-# System prompt — the standing job description. Notice what's deliberately
-# NOT here: nothing about deciding what to check or when to stop. That
-# belongs in the task below, since it's specific to this exercise, not a
-# permanent trait of the agent. Keeping it out here means it's easy to
-# rewrite the open-endedness of the task between runs without touching
-# these standing rules.
-# ---------------------------------------------------------------------------
-
 SYSTEM_PROMPT = """\
-You are evaluating real businesses on how well-represented they are in
-structured, publicly queryable data — the kind of data a system like an
-AI assistant or shopping agent would actually be able to see and act on.
+You are evaluating two real businesses on how well-represented they are in
+structured, publicly queryable data — the kind of data a system like an AI
+assistant or shopping agent would actually be able to see and act on.
 
 Use only the real data the tools return. Do not invent or assume facts
 that weren't in a tool result. If a tool reports missing data (no website,
@@ -188,17 +177,17 @@ meaningful information in itself, not as a gap to quietly fill in.
 """
 
 # ---------------------------------------------------------------------------
-# The agentic loop — identical shape to every earlier version.
+# The agentic loop — same shape as every earlier version.
 # ---------------------------------------------------------------------------
 
-def run(task: str):
+def run_agentic_loop(task: str):
     messages = [{"role": "user", "content": task}]
     print(f"\nTASK: {task}\n{'-'*60}")
 
     while True:
         response = client.messages.create(
             model="claude-sonnet-4-6",
-            max_tokens=1500,
+            max_tokens=1024,
             system=SYSTEM_PROMPT,
             tools=TOOLS,
             messages=messages,
@@ -232,14 +221,9 @@ def run(task: str):
 
 
 if __name__ == "__main__":
-    # This is the user prompt — today's specific assignment. Everything
-    # about HOW open-ended this run is lives here, not in the system
-    # prompt, deliberately, so it's easy to rewrite between experiments.
-    run(
-        "You're assessing four Bond Street luxury flagships — Chanel, "
-        "Dior, Louis Vuitton, and Brunello Cucinelli — for a discoverability "
-        "consultancy. Decide for yourself what's worth checking for each "
-        "business and in what order, and stop once you're confident in "
-        "your overall assessment. Explain your reasoning as you go, then "
-        "give your final assessment."
+    run_agentic_loop(
+        "Compare 'Chanel Bond Street London' and 'Dior New Bond Street London' "
+        "on real discoverability signals — rating, review count, price tier, "
+        "website presence, and live opening status. Give an honest verdict on "
+        "which is currently better represented in structured, queryable data."
     )

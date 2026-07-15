@@ -229,7 +229,7 @@ def _build_html_report(event_log, task):
 # the loop actually does.
 # ---------------------------------------------------------------------------
 
-def run(task: str):
+def run_agentic_loop(task: str):
     messages = [{"role": "user", "content": task}]
     event_log = []  # only used if SHOW_HTML_REPORT is True
     tool_call_number = 0  # increments with every tool call, for readability
@@ -291,7 +291,7 @@ def run(task: str):
 
 
 if __name__ == "__main__":
-    run(
+    run_agentic_loop(
         "You're assessing four Bond Street luxury flagships — Chanel, "
         "Dior, Louis Vuitton, and Brunello Cucinelli — for a discoverability "
         "consultancy. Decide for yourself what's worth checking for each "

@@ -1,24 +1,23 @@
 """
-Lesson 1: the smallest possible agentic loop.
+Lesson 2 — same agentic loop as lesson 1, but steps stream to a webpage as
+cards instead of printing to a terminal.
 
-Claude is asked whether "Brand X" would get shortlisted by an AI shopping
-agent over a competitor. It decides for itself which of two tools to call,
-in what order, and produces a verdict based on what the (fake) data says.
-
-Every step is printed so you can watch the loop happen.
+Run this, then open http://localhost:5000 in your browser and click "Run".
 """
 
 import os
 import json
+import time
+from flask import Flask, Response, render_template, request
 from dotenv import load_dotenv
 from anthropic import Anthropic
 
 load_dotenv()
 client = Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+app = Flask(__name__)
 
 # ---------------------------------------------------------------------------
-# Mock "tools" — plain Python functions returning made-up but plausible data.
-# In a real system these would call a real API, database, or scraper.
+# Same mock tools as before
 # ---------------------------------------------------------------------------
 
 def check_brand_data(brand_name: str) -> dict:
@@ -44,14 +43,10 @@ MOCK_FUNCTIONS = {
     "check_competitor_data": check_competitor_data,
 }
 
-# ---------------------------------------------------------------------------
-# Tool definitions Claude actually sees — name, description, expected input.
-# ---------------------------------------------------------------------------
-
 TOOLS = [
     {
         "name": "check_brand_data",
-        "description": "Look up structured discoverability data for a luxury brand: whether it has machine-readable pricing, an availability API, and its review profile.",
+        "description": "Look up structured discoverability data for a luxury brand: pricing, availability API, and review profile.",
         "input_schema": {
             "type": "object",
             "properties": {"brand_name": {"type": "string"}},
@@ -60,7 +55,7 @@ TOOLS = [
     },
     {
         "name": "check_competitor_data",
-        "description": "Look up the same discoverability data for a named competitor brand, for comparison.",
+        "description": "Look up the same discoverability data for a named competitor brand.",
         "input_schema": {
             "type": "object",
             "properties": {"brand_name": {"type": "string"}},
@@ -70,12 +65,12 @@ TOOLS = [
 ]
 
 # ---------------------------------------------------------------------------
-# The agentic loop
+# The agentic loop, yielding one event per step instead of printing
 # ---------------------------------------------------------------------------
 
-def run(task: str):
+def run_agentic_loop(task: str):
     messages = [{"role": "user", "content": task}]
-    print(f"\nTASK: {task}\n{'-'*60}")
+    yield {"type": "task", "content": task}
 
     while True:
         response = client.messages.create(
@@ -85,17 +80,14 @@ def run(task: str):
             messages=messages,
         )
 
-        # Show any reasoning/text Claude produced this turn
         for block in response.content:
             if block.type == "text" and block.text.strip():
-                print(f"\n[Claude says]\n{block.text.strip()}")
+                yield {"type": "reasoning", "content": block.text.strip()}
 
-        # If Claude didn't ask for a tool, it's done — print final answer and stop
         if response.stop_reason != "tool_use":
-            print(f"\n{'-'*60}\nDONE.")
+            yield {"type": "done"}
             return
 
-        # Claude wants to use one or more tools — run each, print what happened
         messages.append({"role": "assistant", "content": response.content})
         tool_results = []
 
@@ -103,8 +95,10 @@ def run(task: str):
             if block.type == "tool_use":
                 fn = MOCK_FUNCTIONS[block.name]
                 result = fn(**block.input)
-                print(f"\n[Tool call] {block.name}({block.input})")
-                print(f"[Tool result] {json.dumps(result)}")
+
+                yield {"type": "tool_call", "name": block.name, "input": block.input}
+                time.sleep(0.6)  # tiny pause so the UI can show the call before the result
+                yield {"type": "tool_result", "name": block.name, "result": result}
 
                 tool_results.append({
                     "type": "tool_result",
@@ -113,12 +107,31 @@ def run(task: str):
                 })
 
         messages.append({"role": "user", "content": tool_results})
-        # loop continues — Claude sees the result and decides what's next
+
+
+# ---------------------------------------------------------------------------
+# Routes
+# ---------------------------------------------------------------------------
+
+@app.route("/")
+def index():
+    return render_template("index.html")
+
+@app.route("/stream")
+def stream():
+    task = request.args.get(
+        "task",
+        "Would 'Lumière' get shortlisted by an AI shopping agent over "
+        "its competitor 'Aurelio'? Check both brands' data and give a "
+        "verdict with your reasoning.",
+    )
+
+    def event_stream():
+        for event in run_agentic_loop(task):
+            yield f"data: {json.dumps(event)}\n\n"
+
+    return Response(event_stream(), mimetype="text/event-stream")
 
 
 if __name__ == "__main__":
-    run(
-        "Would 'Lumière' get shortlisted by an AI shopping agent over "
-        "its competitor 'Aurelio'? Check both brands' data and give a "
-        "verdict with your reasoning."
-    )
+    app.run(debug=True, port=5000)

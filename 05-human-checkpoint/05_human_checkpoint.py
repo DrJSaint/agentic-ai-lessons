@@ -239,7 +239,7 @@ outcome into account rather than assuming the message went out.
 # The agentic loop — identical shape to v1/v3/v4.
 # ---------------------------------------------------------------------------
 
-def run(task: str):
+def run_agentic_loop(task: str):
     messages = [{"role": "user", "content": task}]
     print(f"\nTASK: {task}\n{'-'*60}")
 
@@ -282,7 +282,7 @@ def run(task: str):
 
 
 if __name__ == "__main__":
-    run(
+    run_agentic_loop(
         "Evaluate 'Lumière' against its competitor 'Solenne' for AI shopping "
         "agent discoverability. Check both brands' data, verify review "
         "authenticity if warranted, and check Lumière's live stock feed. "

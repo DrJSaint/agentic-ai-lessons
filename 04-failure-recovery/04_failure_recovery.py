@@ -65,8 +65,7 @@ def check_competitor_data(brand_name: str) -> dict:
 
 
 # The flag text is generated from the ratio, not hardcoded separately, so the
-# two can't drift out of sync the way they did in an earlier version of this
-# script (see the v3 README for what that bug looked like in practice).
+# two can't drift out of sync with each other.
 def check_review_authenticity(brand_name: str) -> dict:
     ratio = REVIEW_RATIOS.get(brand_name, 0.31)
     if ratio < 0.5:
@@ -175,7 +174,7 @@ whether it's reasonable to proceed with the information you already have.
 # The agentic loop — same shape as v1/v3.
 # ---------------------------------------------------------------------------
 
-def run(task: str):
+def run_agentic_loop(task: str):
     messages = [{"role": "user", "content": task}]
     print(f"\nTASK: {task}\n{'-'*60}")
 
@@ -216,7 +215,7 @@ def run(task: str):
 
 
 if __name__ == "__main__":
-    run(
+    run_agentic_loop(
         "Would 'Lumière' get shortlisted by an AI shopping agent over its "
         "competitor 'Solenne'? Check both brands' data, check review "
         "authenticity if warranted, and check Lumière's live stock feed "

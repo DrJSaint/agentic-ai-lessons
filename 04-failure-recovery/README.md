@@ -19,10 +19,11 @@ or proceed without the data.
 
 ## Setup
 
-Copy your `.env` from an earlier folder into this one, then:
+This lesson only needs `ANTHROPIC_API_KEY`, read from the single `.env` file
+at the root of this repository, shared by every lesson. Then:
 
 ```
-py shortlist_demo_v4.py
+py 04_failure_recovery.py
 ```
 
 ## What to watch for

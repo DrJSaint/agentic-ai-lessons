@@ -42,10 +42,12 @@ standing rules.
 
 ## Setup
 
-Same as v6 — `GOOGLE_PLACES_KEY` and `ANTHROPIC_API_KEY` in `.env`, then:
+Same as lesson 6 — this lesson needs both `ANTHROPIC_API_KEY` and
+`GOOGLE_PLACES_KEY`, read from the single `.env` file at the root of this
+repository, shared by every lesson. Then:
 
 ```
-py shortlist_demo_v7.py
+py 07_open_ended_real_data.py
 ```
 
 ## What to watch for

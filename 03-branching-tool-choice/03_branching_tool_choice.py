@@ -133,7 +133,7 @@ as at least as important as live availability data.
 # The agentic loop — identical in structure to v1.
 # ---------------------------------------------------------------------------
 
-def run(task: str):
+def run_agentic_loop(task: str):
     messages = [{"role": "user", "content": task}]
     print(f"\nTASK: {task}\n{'-'*60}")
 
@@ -174,7 +174,7 @@ def run(task: str):
 
 
 if __name__ == "__main__":
-    run(
+    run_agentic_loop(
         "Would 'Lumière' get shortlisted by an AI shopping agent over "
         "its competitor 'Solenne'? Check both brands' data, and check "
         "review authenticity if you think it's warranted, then give a "

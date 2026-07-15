@@ -8,7 +8,7 @@ loop actually does.
 
 ## The two toggles
 
-Near the top of `shortlist_demo_v8.py`:
+Near the top of `08_html_report_and_internals.py`:
 
 ```python
 SHOW_HTML_REPORT = True
@@ -59,10 +59,12 @@ single loop iteration.
 
 ## Setup
 
-Same as v6/v7 — `.env` with both keys, `googlemaps` installed. Then:
+Same as lessons 6/7 — this lesson needs both `ANTHROPIC_API_KEY` and
+`GOOGLE_PLACES_KEY`, read from the single `.env` file at the root of this
+repository, shared by every lesson, plus `googlemaps` installed. Then:
 
 ```
-py shortlist_demo_v8.py
+py 08_html_report_and_internals.py
 ```
 
 ## What to look for
