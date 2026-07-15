@@ -3,10 +3,10 @@ Lesson 8 — seeing the innards.
 
 Same real tools and open-ended task as v7. The terminal log (the familiar
 [Claude says] / [Tool call] / [Tool result] / DONE lines) is completely
-unchanged, no matter what the two toggles below are set to.
+unchanged, no matter what the toggles below are set to.
 
-Two independent, additive extras, controlled by the two booleans just
-below the imports:
+Independent, additive extras, controlled by the booleans just below the
+imports:
 
 SHOW_HTML_REPORT — when True, once the run finishes, writes a static HTML
 file rendering the whole run as readable cards, similar in spirit to v2's
@@ -15,10 +15,20 @@ events rather than streamed. No yield, no Flask, no live server — the run
 happens exactly as normal, and a file gets written at the very end.
 
 SHOW_MESSAGE_INTERNALS — when True, after every single change to the
-`messages` list, prints the ENTIRE list, raw, exactly as it will be sent
-to Claude on the next loop iteration. This is deliberately not pretty —
-the point is to see precisely what's being passed back and forth, with
-nothing hidden or reformatted for readability.
+`messages` list, records the ENTIRE list, raw, exactly as it will be sent
+to Claude on the next loop iteration. In the HTML report, each message is
+rendered as its own block, alternately coloured white/light blue by its
+position in the list — so a message's colour never changes between
+snapshots, and whatever's been newly appended since the last snapshot is
+immediately visible as the block(s) continuing the pattern past where it
+last left off.
+
+FILLED_MESSAGE_BACKGROUNDS — only has any visible effect when
+SHOW_MESSAGE_INTERNALS is also True. When True (the default), each message
+block is filled with a white or light-blue background, with dark text.
+When False, the block keeps the same dark background as the rest of the
+report, and the white/light-blue colour is applied to the text instead.
+Same alternating pattern either way — just a different way of seeing it.
 """
 
 import os
@@ -32,11 +42,12 @@ client = Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
 gmaps = googlemaps.Client(key=os.environ["GOOGLE_PLACES_KEY"])
 
 # ---------------------------------------------------------------------------
-# The two toggles. Flip either independently of the other.
+# The toggles. Flip any of these independently of the others.
 # ---------------------------------------------------------------------------
 
 SHOW_HTML_REPORT = True
 SHOW_MESSAGE_INTERNALS = True
+FILLED_MESSAGE_BACKGROUNDS = True
 
 # ---------------------------------------------------------------------------
 # Real tools — identical to v6/v7. Both genuinely call the Google Places
@@ -169,10 +180,15 @@ def _record_messages_snapshot(event_log, messages):
     stands, into the event log for later inclusion in the HTML report.
     Deliberately not printed to the terminal — a growing, resent-in-full
     list is genuinely hard to follow scrolling past in a terminal, but
-    reads fine as a static section in a browser."""
+    reads fine as a static section in a browser.
+
+    Stored as a plain, JSON-safe list (not a pre-joined string) so the
+    report can render each message as its own block below — that's what
+    lets each message be coloured by its position in the list."""
+    safe_messages = json.loads(json.dumps(messages, default=_safe_serialise))
     event_log.append({
         "type": "message_snapshot",
-        "content": json.dumps(messages, indent=2, default=_safe_serialise),
+        "messages": safe_messages,
     })
 
 
@@ -190,7 +206,40 @@ def _build_html_report(event_log, task):
         elif event["type"] == "tool_result":
             rows.append(f'<div class="card tool_result"><div class="label">Tool result {event["number"]}</div><pre>{json.dumps(event["result"], indent=2)}</pre></div>')
         elif event["type"] == "message_snapshot":
-            rows.append(f'<div class="card snapshot"><div class="label">Raw messages snapshot</div><pre>{event["content"]}</pre></div>')
+            # Each message in the list gets its own block, coloured by its
+            # position (even/odd), not by snapshot — so a message keeps the
+            # same colour in every snapshot it appears in, and whatever's
+            # newly appended since the last snapshot is immediately obvious
+            # as the block(s) continuing the pattern past where it last left off.
+            message_blocks = []
+            for i, message in enumerate(event["messages"]):
+                colour_class = "msg-even" if i % 2 == 0 else "msg-odd"
+                message_blocks.append(
+                    f'<div class="message {colour_class}"><pre>{json.dumps(message, indent=2)}</pre></div>'
+                )
+            rows.append(
+                f'<div class="card snapshot">'
+                f'<div class="label">Raw messages snapshot ({len(event["messages"])} messages)</div>'
+                f'<div class="messages">{"".join(message_blocks)}</div>'
+                f'</div>'
+            )
+
+    # The two colour schemes for message blocks share everything except how
+    # the white/light-blue distinction is applied: as a filled background
+    # (with dark text) or as the text colour itself (on the existing dark
+    # background). Built here, as plain CSS text, then dropped straight
+    # into the stylesheet below.
+    if FILLED_MESSAGE_BACKGROUNDS:
+        message_colour_css = (
+            "  .message pre { color: #14161a; }\n"
+            "  .msg-even { background: #ffffff; }\n"
+            "  .msg-odd { background: #cfe8ff; }"
+        )
+    else:
+        message_colour_css = (
+            "  .msg-even pre { color: #ffffff; }\n"
+            "  .msg-odd pre { color: #cfe8ff; }"
+        )
 
     html = f"""<!DOCTYPE html>
 <html><head><meta charset="UTF-8"><title>Agentic run report</title>
@@ -205,7 +254,11 @@ def _build_html_report(event_log, task):
   .tool_call .label, .tool_result .label {{ color: #5dcaa5; }}
   .snapshot {{ background: #101214; border-color: #2a2d33; }}
   .snapshot .label {{ color: #888; }}
-  .snapshot pre {{ font-size: 11px; color: #aab; max-height: 400px; overflow-y: auto; }}
+  .snapshot .messages {{ max-height: 500px; overflow-y: auto; }}
+  .message {{ padding: 8px 10px; border-radius: 6px; margin-bottom: 6px; }}
+  .message:last-child {{ margin-bottom: 0; }}
+  .message pre {{ font-size: 11px; }}
+{message_colour_css}
   pre {{ white-space: pre-wrap; font-family: ui-monospace, monospace; font-size: 13px; margin: 0; }}
 </style></head>
 <body>
@@ -215,10 +268,15 @@ def _build_html_report(event_log, task):
 {"".join(rows)}
 </body></html>"""
 
-    # Written into a "reports" folder, kept alongside the script. Not yet
-    # timestamped — every run currently overwrites the previous report.
-    os.makedirs("reports", exist_ok=True)
-    path = os.path.join("reports", "run_report.html")
+    # Written into the "reports" folder at the repository root — anchored to
+    # this script's own file location (not the current working directory),
+    # so it lands in the same place whether you run this from inside the
+    # lesson folder or from anywhere else. Not yet timestamped — every run
+    # currently overwrites the previous report.
+    repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    reports_dir = os.path.join(repo_root, "reports")
+    os.makedirs(reports_dir, exist_ok=True)
+    path = os.path.join(reports_dir, "run_report_08.html")
     with open(path, "w", encoding="utf-8") as f:
         f.write(html)
     return path

@@ -1,6 +1,8 @@
 """
 Lesson 2 — same agentic loop as lesson 1, but steps stream to a webpage as
-cards instead of printing to a terminal.
+cards instead of printing to a terminal. Tool call/result cards are
+numbered (Tool call 1, Tool result 1, Tool call 2...), matching lesson 8,
+so a run with several tool calls is easier to follow.
 
 Run this, then open http://localhost:5000 in your browser and click "Run".
 """
@@ -70,6 +72,7 @@ TOOLS = [
 
 def run_agentic_loop(task: str):
     messages = [{"role": "user", "content": task}]
+    tool_call_number = 0  # increments with every tool call, for readability
     yield {"type": "task", "content": task}
 
     while True:
@@ -93,12 +96,13 @@ def run_agentic_loop(task: str):
 
         for block in response.content:
             if block.type == "tool_use":
+                tool_call_number += 1
                 fn = MOCK_FUNCTIONS[block.name]
                 result = fn(**block.input)
 
-                yield {"type": "tool_call", "name": block.name, "input": block.input}
+                yield {"type": "tool_call", "name": block.name, "input": block.input, "number": tool_call_number}
                 time.sleep(0.6)  # tiny pause so the UI can show the call before the result
-                yield {"type": "tool_result", "name": block.name, "result": result}
+                yield {"type": "tool_result", "name": block.name, "result": result, "number": tool_call_number}
 
                 tool_results.append({
                     "type": "tool_result",

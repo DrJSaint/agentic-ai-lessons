@@ -97,10 +97,10 @@ function runLoop() {
       card.innerHTML = `<div class="label">Claude reasons</div><pre>${event.content}</pre>`;
     } else if (event.type === "tool_call") {
       card.className = "card tool_call";
-      card.innerHTML = `<div class="label">Tool call</div><pre>${event.name}(${JSON.stringify(event.input)})</pre>`;
+      card.innerHTML = `<div class="label">Tool call ${event.number}</div><pre>${event.name}(${JSON.stringify(event.input)})</pre>`;
     } else if (event.type === "tool_result") {
       card.className = "card tool_result";
-      card.innerHTML = `<div class="label">Tool result</div><pre>${JSON.stringify(event.result, null, 2)}</pre>`;
+      card.innerHTML = `<div class="label">Tool result ${event.number}</div><pre>${JSON.stringify(event.result, null, 2)}</pre>`;
     } else if (event.type === "done") {
       card.className = "card done";
       card.innerHTML = `<div class="label">Done</div><pre>Loop finished.</pre>`;

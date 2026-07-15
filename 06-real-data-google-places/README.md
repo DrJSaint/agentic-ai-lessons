@@ -18,6 +18,58 @@ queryable data** — rating, review count, price tier, website presence, and
 live opening-hours status. That's a genuine, answerable question, using
 only fields Google Places actually provides.
 
+## The toggles
+
+Near the top of `06_real_data_google_places.py`:
+
+```python
+SHOW_HTML_REPORT = True
+SHOW_MESSAGE_INTERNALS = True
+FILLED_MESSAGE_BACKGROUNDS = True
+```
+
+The same two extras introduced in lesson 8 (`08-html-report-and-internals`),
+brought forward here. The terminal output described below never changes,
+no matter how these are set — including the numbered `[Tool call 1]` /
+`[Tool result 1]` lines, which always print regardless of any toggle,
+matching lesson 8.
+
+### `SHOW_HTML_REPORT`
+
+Once the run finishes, writes a file to `reports/run_report_06.html` at
+the root of the repository — a static, readable page rendering the system
+prompt, the task, and every piece of reasoning, tool call, and tool result
+as cards. The path is anchored to the script's own location, not to
+whatever directory you happen to run it from, so it always lands in the
+same `reports` folder at the repo root regardless of where you invoke it
+from; that folder is created automatically if it doesn't already exist.
+The filename is unique to this lesson so it won't collide with any other
+lesson's report. Reports aren't timestamped, so running this lesson again
+overwrites its own previous report.
+
+### `SHOW_MESSAGE_INTERNALS`
+
+Only has any effect if `SHOW_HTML_REPORT` is also `True`. When both are
+`True`, the HTML report gets an extra section for every change to the
+`messages` list: the **entire** list, raw, exactly as it stood at that
+point in the run. Each message in the list is rendered as its own block,
+alternating white and light-blue backgrounds by its position in the list —
+not by which snapshot it appears in. That means a given message keeps the
+same colour every time it shows up again in a later, longer snapshot, so
+whatever's newly appended since the previous snapshot is immediately
+obvious: it's the block(s) that continue the alternating pattern past
+wherever the last snapshot's colours left off.
+
+### `FILLED_MESSAGE_BACKGROUNDS`
+
+Only has any visible effect if `SHOW_MESSAGE_INTERNALS` is also `True` —
+it controls how the white/light-blue alternation above is rendered.
+
+- `True` (the default): each message block is filled with a white or
+  light-blue background, with dark text.
+- `False`: the block keeps the same dark background as the rest of the
+  report, and the white/light-blue colour is applied to the text instead.
+
 ## Setup
 
 This lesson needs both `ANTHROPIC_API_KEY` and `GOOGLE_PLACES_KEY`, read from

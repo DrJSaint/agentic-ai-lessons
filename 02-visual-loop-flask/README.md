@@ -1,4 +1,4 @@
-# Lesson 1, v2 — visual version
+# Lesson 2 — visual version
 
 Same agentic loop as lesson 1's `01_first_agentic_loop.py`, but instead of printing to a
 terminal, each step streams to a webpage as a card, live, as it happens.
@@ -23,7 +23,9 @@ The agentic loop itself (`run_agentic_loop` in `app.py`) is the same logic as
 `01_first_agentic_loop.py` in lesson 1 — same two mock tools, same reasoning, same decision.
 The only change is that each step is `yield`ed as a small event instead of
 `print()`ed, and a webpage listens for those events (via Server-Sent Events)
-and draws a card for each one as it arrives.
+and draws a card for each one as it arrives. Tool call/result cards are
+numbered (`Tool call 1`, `Tool result 1`, `Tool call 2`...), matching
+lesson 8, so a run with several tool calls is easier to follow.
 
 This is the first step toward a genuine demo: the mechanism is identical,
 but now it's watchable by someone who isn't reading a terminal.
