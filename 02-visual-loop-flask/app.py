@@ -1,8 +1,8 @@
 """
 Lesson 2 — same agentic loop as lesson 1, but steps stream to a webpage as
 cards instead of printing to a terminal. Tool call/result cards are
-numbered (Tool call 1, Tool result 1, Tool call 2...), matching lesson 8,
-so a run with several tool calls is easier to follow.
+numbered (Tool call 1, Tool result 1, Tool call 2...), so a run with
+several tool calls is easier to follow.
 
 Run this, then open http://localhost:5000 in your browser and click "Run".
 """

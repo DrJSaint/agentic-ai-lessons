@@ -22,12 +22,11 @@ was never something Google Places could genuinely speak to.
 Every step is printed so you can watch the loop happen — that terminal
 output never changes, no matter how the toggles below are set. Tool
 calls/results are numbered (`[Tool call 1]`, `[Tool result 1]`, `[Tool
-call 2]`...), matching lesson 8, so a run with several tool calls is
-easier to follow in both the terminal and the HTML report.
+call 2]`...) so a run with several tool calls is easier to follow in both
+the terminal and the HTML report.
 
 Independent, additive extras, controlled by the booleans just below the
-imports. These are the same two extras introduced in lesson 8, brought
-forward here so they're available this early too:
+imports (see lesson 1 for the full explanation):
 
 SHOW_HTML_REPORT — when True, once the run finishes, writes a static HTML
 file rendering the whole run as readable cards. No live streaming — the
@@ -214,10 +213,9 @@ meaningful information in itself, not as a gap to quietly fill in.
 """
 
 # ---------------------------------------------------------------------------
-# Helpers for the two additive extras, rippled back from lesson 8 — the
-# HTML report and the raw message-internals view. Neither of these touches
-# the loop's actual behaviour; they only observe and record what's already
-# happening.
+# Helpers for the two additive extras — the HTML report and the raw
+# message-internals view. Neither of these touches the loop's actual
+# behaviour; they only observe and record what's already happening.
 # ---------------------------------------------------------------------------
 
 def _safe_serialise(obj):
